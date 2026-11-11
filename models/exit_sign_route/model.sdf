@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!-- Written by exit_inspection/sim/generate_exit_room_world.py: run it again rather than editing this file. -->
+<sdf version="1.7">
+  <model name="exit_sign_route">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry><box><size>0.02 0.4047 0.2000</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 0.4047 0.2000</size></box></geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <emissive>0.5 0.5 0.5 1</emissive>
+          <pbr>
+            <metal>
+              <albedo_map>model://exit_sign_route/materials/textures/sign.png</albedo_map>
+              <emissive_map>model://exit_sign_route/materials/textures/sign.png</emissive_map>
+              <metalness>0.0</metalness>
+              <roughness>0.9</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

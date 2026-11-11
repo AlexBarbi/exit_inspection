@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- Written by exit_inspection/sim/generate_exit_room_world.py: run it again rather than editing this file. -->
+<sdf version="1.7">
+  <model name="exit_camera_rig">
+    <static>true</static>
+    <link name="link">
+        <sensor name="color" type="camera">
+          <always_on>true</always_on>
+          <update_rate>10</update_rate>
+          <topic>rig/color</topic>
+          <camera>
+            <horizontal_fov>1.211259</horizontal_fov>
+            <image><width>1920</width><height>1080</height><format>R8G8B8</format></image>
+            <clip><near>0.1</near><far>30.0</far></clip>
+          </camera>
+        </sensor>
+        <sensor name="depth" type="depth_camera">
+          <always_on>true</always_on>
+          <update_rate>10</update_rate>
+          <topic>rig/depth</topic>
+          <camera>
+            <horizontal_fov>1.211259</horizontal_fov>
+            <image><width>1920</width><height>1080</height><format>R_FLOAT32</format></image>
+            <clip><near>0.1</near><far>30.0</far></clip>
+          </camera>
+        </sensor>
+    </link>
+  </model>
+</sdf>

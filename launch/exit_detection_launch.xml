@@ -1,0 +1,45 @@
+<launch>
+  <!-- Exit sign landmarks during an exploration (sub-project 1 of the emergency exit inspection,
+       docs/superpowers/specs/2026-11-11-exit-detection-mapping-design.md in the RaNAV workspace).
+
+       exit_sign_detector: a second Yolo26RGBD (opti_pessi_perception) running the exit sign model on the D435i;
+         publishes /exit_sign_detector/detections_2d. publish_obstacles is false: an instance publishing on
+         /opti_pessi/obstacles would replace the controller's obstacles with its (empty) set every frame.
+       exit_landmark_mapper: casts every box into /registered_scan_static (FAST-LIO, camera_init), logs the sightings
+         to <save_directory>/exit_inspection/sightings.csv and shows the exits on /exit_inspection/exit_markers.
+       finalize_exits.py <save_directory> writes exits.yaml at the end (tare_finish_merge_map.py exits:=true).
+
+       Needs FAST-LIO (camera_init -> rslidar_lio -> lio_base TF, /registered_scan_static from people_perception's
+       dynamic_points_filter, both started by fast_lio_slam_launch.xml) and the D435i topics. -->
+  <arg name="use_sim_time" default="true"/>
+  <arg name="model" default="$(env HOME)/RaNAV/models/exit_sign/exit_sign_736x1280.onnx"
+       description="ONNX export of the exit sign detector (exit_inspection/training)"/>
+  <arg name="conf" default="0.4" description="Detector confidence threshold"/>
+  <arg name="use_gpu" default="true"/>
+  <arg name="process_every_n" default="2" description="Run the detector on one image pair out of n (15 Hz camera)"/>
+  <arg name="detector" default="true" description="Start the detector (false: another one publishes detections_topic)"/>
+  <arg name="detections_topic" default="/exit_sign_detector/detections_2d"/>
+  <arg name="save_directory" default=""
+       description="Sightings go to its exit_inspection/ folder; empty: SC-PGO's save_directory (asked to alaserPGO), where tare_finish_merge_map.py looks for them"/>
+
+  <node if="$(var detector)" pkg="opti_pessi_perception" exec="yolo26_rgbd_detect" name="exit_sign_detector"
+        output="screen">
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+    <param name="model" value="$(var model)"/>
+    <param name="conf" value="$(var conf)"/>
+    <param name="use_gpu" value="$(var use_gpu)"/>
+    <param name="classes" value="[exit_plain, exit_arrow_down, exit_arrow_side]"/>
+    <param name="show" value="false"/>
+    <param name="blur_persons" value="false"/>
+    <param name="publish_obstacles" value="false"/>
+    <param name="process_every_n" value="$(var process_every_n)"/>
+    <param name="max_depth" value="10.0"/>
+  </node>
+
+  <node pkg="exit_inspection" exec="exit_landmark_mapper.py" name="exit_landmark_mapper" output="screen">
+    <param from="$(find-pkg-share exit_inspection)/config/exit_landmark_mapper.yaml"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+    <param name="save_directory" value="$(var save_directory)"/>
+    <param name="detections_topic" value="$(var detections_topic)"/>
+  </node>
+</launch>

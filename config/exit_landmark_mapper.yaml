@@ -1,0 +1,43 @@
+# exit_landmark_mapper.py parameters (exit_inspection.landmarks.MapperParams + node settings).
+exit_landmark_mapper:
+  ros__parameters:
+    pgo_node: alaserPGO           # empty save_directory: SC-PGO's, asked to this node
+    door_classes: [exit_plain, exit_arrow_down]   # the other classes are route signs, never inspected
+    min_conf: 0.4
+    map_frame: camera_init
+    lio_base_frame: lio_base      # FAST-LIO's base (camera_init -> rslidar_lio -> lio_base)
+    base_frame: base              # URDF base, parent of the camera frames
+    camera_info_topic: /camera/color/camera_info
+    cloud_topic: /registered_scan_static
+    cloud_window: 5.0             # s of scans in the rolling cloud
+    cloud_voxel: 0.05
+    cloud_radius: 15.0
+    # first hit of the box ray in the cloud
+    ray_radius: 0.15
+    hit_min_points: 5
+    hit_window: 0.3
+    # vertical wall plane around the hit
+    plane_radius: 0.6
+    plane_threshold: 0.03
+    plane_min_inliers: 30
+    plane_min_height: 0.2
+    plane_iterations: 100
+    # floor under the sign
+    floor_radius: 1.0
+    floor_wall_gap: 0.1
+    floor_below: 1.0
+    floor_bin: 0.05
+    floor_min_points: 20
+    base_height: 0.35
+    # sanity of a sighting
+    sign_min_height: 1.5
+    sign_max_height: 3.5
+    sign_min_width: 0.15
+    sign_max_width: 0.8
+    # association, confirmation, door
+    assoc_distance: 1.0
+    assoc_angle_deg: 45.0
+    confirm_sightings: 5
+    confirm_baseline: 0.5
+    door_width: 1.2
+    door_height: 2.0

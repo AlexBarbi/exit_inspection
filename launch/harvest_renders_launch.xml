@@ -1,0 +1,16 @@
+<launch>
+  <!-- Exit room without the robot, plus the free camera rig (models/exit_camera_rig) for sim/harvest_renders.py:
+       labeled frames of the exit signs for the detector's sim evaluation and background images for training.
+         ros2 launch exit_inspection harvest_renders_launch.xml
+         python3 sim/harvest_renders.py <out_dir> -n 400 -->
+  <set_env name="GZ_SIM_RESOURCE_PATH"
+           value="$(find-pkg-share legged_gazebo)/models:$(find-pkg-share exit_inspection)/models"/>
+  <include file="$(find-pkg-share ros_gz_sim)/launch/gz_server.launch.py">
+    <arg name="world_sdf_file" value="$(find-pkg-share exit_inspection)/worlds/exit_room.world"/>
+    <arg name="gz_args" value="-r"/>
+  </include>
+  <node pkg="ros_gz_sim" exec="create" name="spawn_rig" output="screen"
+        args="-world exit_room -file $(find-pkg-share exit_inspection)/models/exit_camera_rig/model.sdf -name rig -x 0 -y 0 -z 0.4"/>
+  <node pkg="ros_gz_bridge" exec="parameter_bridge" name="rig_bridge" output="screen"
+        args="/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock /rig/color@sensor_msgs/msg/Image[gz.msgs.Image /rig/depth@sensor_msgs/msg/Image[gz.msgs.Image"/>
+</launch>
