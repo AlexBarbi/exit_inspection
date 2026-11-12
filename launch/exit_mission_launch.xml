@@ -1,0 +1,56 @@
+<launch>
+  <!-- Exit inspection mission (sub-project 3 of the emergency exit inspection,
+       docs/superpowers/specs/2026-11-11-exit-inspection-pass-design.md in the RaNAV workspace).
+
+       Start it after fast_lio_slam_launch.xml, with the robot standing where the exploration started (the saved FAR
+       graph, exits.yaml and optimized_map.pcd are in that exploration's camera_init):
+         far_planner_launch.xml       far_planner on the saved graph, the goal bridge (turns to /goal_yaw_hint);
+                                      its point inspection is off here (inspection:=false)
+         exit_zone_check_launch.xml   person detector + zone verdicts
+         exit_inspection_pass.py      viewpoints, verdict per exit, report (reports/<stamp>/report.html next to
+                                      exits.yaml, exit_report.yaml)
+       Nothing moves at the launch: "Start exit inspection" in map_point_picker, or
+         ros2 topic pub -1 /start_exit_inspection std_msgs/msg/String "{data: ''}"
+       auto_start:=true starts at once. far:=false planner:=direct: no far_planner, straight goals (open rooms, tests). -->
+  <arg name="use_sim_time" default="true"/>
+  <arg name="save_directory" default="$(env HOME)/RaNAV/src/FAST_LIO_SLAM_ROS2/save_data"
+       description="Folder of the exploration (optimized_map.pcd, warehouse.vgh, exit_inspection/exits.yaml)"/>
+  <arg name="exits_file" default="$(var save_directory)/exit_inspection/exits.yaml"/>
+  <arg name="map_file" default="$(var save_directory)/optimized_map.pcd"/>
+  <arg name="graph_file" default="$(var save_directory)/warehouse.vgh"/>
+  <arg name="far" default="true" description="Start far_planner_launch.xml (false: it runs already, or planner:=direct)"/>
+  <arg name="planner" default="far" description="far: goals to far_planner; direct: straight goals to the controller"/>
+  <arg name="auto_start" default="false"/>
+  <arg name="rviz" default="false"/>
+  <arg name="people_free" default="true"/>
+  <arg name="person_detector" default="true"/>
+  <arg name="use_gpu" default="true"/>
+  <arg name="w_min" default="0.9"/>
+  <arg name="debug_dump" default="false"/>
+
+  <include if="$(var far)" file="$(find-pkg-share far_planner)/launch/far_planner_launch.xml">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="graph_file" value="$(var graph_file)"/>
+    <arg name="inspection" value="false"/>
+    <arg name="people_free" value="$(var people_free)"/>
+  </include>
+
+  <include file="$(find-pkg-share exit_inspection)/launch/exit_zone_check_launch.xml">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
+    <arg name="exits_file" value="$(var exits_file)"/>
+    <arg name="person_detector" value="$(var person_detector)"/>
+    <arg name="use_gpu" value="$(var use_gpu)"/>
+    <arg name="w_min" value="$(var w_min)"/>
+    <arg name="debug_dump" value="$(var debug_dump)"/>
+  </include>
+
+  <node pkg="exit_inspection" exec="exit_inspection_pass.py" name="exit_inspection_pass" output="screen">
+    <param from="$(find-pkg-share exit_inspection)/config/exit_inspection_pass.yaml"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+    <param name="exits_file" value="$(var exits_file)"/>
+    <param name="map_file" value="$(var map_file)"/>
+    <param name="planner" value="$(var planner)"/>
+    <param name="auto_start" value="$(var auto_start)"/>
+  </node>
+</launch>

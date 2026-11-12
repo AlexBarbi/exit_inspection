@@ -71,8 +71,9 @@ def main():
             meta[r["frame"]].append(r)
     rows, fps, n_frames = [], 0, 0
     images = sorted(glob.glob(os.path.join(args.frames, "images", "*.jpg")))
-    for i in range(0, len(images), 16):
-        batch = images[i:i + 16]
+    step = 1 if args.weights.endswith(".onnx") else 16  # the deployed ONNX has a static batch of 1
+    for i in range(0, len(images), step):
+        batch = images[i:i + step]
         for path, res in zip(batch, model.predict(batch, imgsz=imgsz, conf=args.conf, verbose=False)):
             n_frames += 1
             h, w = res.orig_shape

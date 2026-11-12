@@ -1,0 +1,44 @@
+# exit_sign_sweep.py parameters + exit_inspection.sweep.SweepParams.
+# Spec: docs/superpowers/specs/2026-11-12-exit-sign-sweep-design.md in the RaNAV workspace.
+exit_sign_sweep:
+  ros__parameters:
+    map_frame: camera_init
+    lio_base_frame: lio_base
+    base_frame: base
+    camera_frame: camera_color_optical_frame
+    lidar_frame: rslidar_lio
+    far_frame: map
+    cloud_topic: /registered_scan_static
+    process_period: 1.0           # s between scans added to the grid (and camera looks counted)
+    base_height: 0.35             # lio_base above the floor
+    reach_tolerance: 0.35
+    yaw_tolerance: 0.3
+    turn_timeout: 15.0
+    dwell: 2.0                    # s at each stop (sim time)
+    side_step: 0.5                # second stop of a viewpoint, sideways: the mapper confirms signs seen from >= 0.25 m apart
+    goal_timeout: 120.0
+    idle_timeout: 10.0
+    ack_timeout: 5.0
+    start_bridge: true            # its own goal bridge, following far_planner's route
+    bridge_node: exit_sweep_goal_bridge
+    # grid and planning
+    cell: 0.2
+    size: 160.0                   # grid side [m], centred on the start
+    wall_low: 1.5                 # sign band above the floor
+    wall_high: 2.8
+    obstacle_low: 0.15
+    obstacle_high: 1.0
+    min_hits: 2
+    clearance: 0.6
+    d_min: 6.8                    # a sign at ~2.25 m enters the D435i colour image from ~6.6 m
+    d_max: 10.0
+    half_fov_deg: 28.0
+    max_incidence_deg: 50.0
+    candidate_step: 1.0
+    yaw_count: 16
+    covered_looks: 2
+    min_new_cells: 10
+    max_viewpoints: 8
+    target_coverage: 0.9
+    max_rays: 3000
+    bin_deg: 0.5

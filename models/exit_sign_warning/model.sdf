@@ -15,8 +15,8 @@
           <emissive>0.5 0.5 0.5 1</emissive>
           <pbr>
             <metal>
-              <albedo_map>model://exit_sign_warning/materials/textures/sign.png</albedo_map>
-              <emissive_map>model://exit_sign_warning/materials/textures/sign.png</emissive_map>
+              <albedo_map>model://exit_sign_warning/materials/textures/exit_sign_warning.png</albedo_map>
+              <emissive_map>model://exit_sign_warning/materials/textures/exit_sign_warning.png</emissive_map>
               <metalness>0.0</metalness>
               <roughness>0.9</roughness>
             </metal>

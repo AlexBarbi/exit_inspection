@@ -1,0 +1,43 @@
+<launch>
+  <!-- Zone verdicts in front of the exit doors (sub-project 2 of the emergency exit inspection,
+       docs/superpowers/specs/2026-11-11-exit-zone-checker-design.md in the RaNAV workspace).
+
+       person_detector: a Yolo26RGBD (opti_pessi_perception) with the COCO model, class person, on the D435i color +
+         aligned depth; its ~/detections (3D) tell the checker where people stand. publish_obstacles is false: an
+         instance publishing on /opti_pessi/obstacles would replace the controller's obstacles every frame.
+       exit_zone_checker: D435i raw depth + /registered_scan_static in a grid per exit, verdicts on
+         /exit_inspection/zone_verdicts, /exit_inspection/zone_markers and <exits.yaml folder>/zone_checks.yaml.
+
+       Needs FAST-LIO (camera_init -> rslidar_lio -> lio_base TF, /registered_scan_static), the D435i topics and an
+       exits.yaml (finalize_exits.py). -->
+  <arg name="use_sim_time" default="true"/>
+  <arg name="exits_file" default=""
+       description="exits.yaml to check; empty: SC-PGO's save_directory/exit_inspection/exits.yaml (asked to alaserPGO)"/>
+  <arg name="person_detector" default="true" description="Start the person Yolo26RGBD instance"/>
+  <arg name="person_model" default="yolo26n.onnx" description="COCO model, file in opti_pessi_perception/weights or a path"/>
+  <arg name="use_gpu" default="true"/>
+  <arg name="person_every_n" default="3" description="Run the person detector on one image pair out of n"/>
+  <arg name="w_min" default="0.9" description="Free corridor width [m]"/>
+  <arg name="debug_dump" default="false" description="Save the inputs of the latest evaluation of every exit"/>
+
+  <node if="$(var person_detector)" pkg="opti_pessi_perception" exec="yolo26_rgbd_detect" name="person_detector"
+        output="screen">
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+    <param name="model" value="$(var person_model)"/>
+    <param name="use_gpu" value="$(var use_gpu)"/>
+    <param name="classes" value="[person]"/>
+    <param name="conf" value="0.4"/>
+    <param name="show" value="false"/>
+    <param name="blur_persons" value="false"/>
+    <param name="publish_obstacles" value="false"/>
+    <param name="process_every_n" value="$(var person_every_n)"/>
+  </node>
+
+  <node pkg="exit_inspection" exec="exit_zone_checker.py" name="exit_zone_checker" output="screen">
+    <param from="$(find-pkg-share exit_inspection)/config/exit_zone_checker.yaml"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+    <param name="exits_file" value="$(var exits_file)"/>
+    <param name="w_min" value="$(var w_min)"/>
+    <param name="debug_dump" value="$(var debug_dump)"/>
+  </node>
+</launch>

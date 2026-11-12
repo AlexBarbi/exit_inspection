@@ -34,12 +34,10 @@ from typing import List, Optional
 import numpy as np
 import rclpy
 from geometry_msgs.msg import Point
-from rcl_interfaces.msg import ParameterType
 from rclpy.duration import Duration
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
-from rclpy.parameter_client import AsyncParameterClient
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from rclpy.time import Time
 from sensor_msgs.msg import CameraInfo, PointCloud2
@@ -51,23 +49,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 from exit_inspection import geometry as g
 from exit_inspection.cloud import RollingCloud, voxel_downsample
 from exit_inspection.landmarks import LandmarkSet, MapperParams, Sighting, make_sighting
+from exit_inspection.pgo_dir import PgoSaveDirectory
 from exit_inspection.records import SightingWriter
-
-def node_pids(name: str) -> List[int]:
-    """PIDs of the processes running ROS node `name` (-r __node:=name, or an executable called name)."""
-    pids = []
-    for entry in os.listdir("/proc"):
-        if not entry.isdigit() or int(entry) == os.getpid():
-            continue
-        try:
-            with open(f"/proc/{entry}/cmdline", "rb") as f:
-                args = f.read().decode(errors="replace").split("\0")
-        except OSError:
-            continue
-        if f"__node:={name}" in args or name in {os.path.basename(a) for a in args[:2]}:
-            pids.append(int(entry))
-    return pids
-
 
 COLORS = {"confirmed": (0.0, 0.8, 0.3, 1.0), "unconfirmed": (0.6, 0.6, 0.6, 0.8), "route": (0.2, 0.5, 1.0, 0.9)}
 
@@ -106,12 +89,10 @@ class ExitLandmarkMapper(Node):
         self.writer: Optional[SightingWriter] = None
         self.pending: List[Sighting] = []  # until the save directory is known
         self.rejects = {}
-        self.pgo_params = None
-        self.pgo_future = None
         if save_directory:
             self.open_writer(os.path.abspath(save_directory))
         else:
-            self.pgo_params = AsyncParameterClient(self, self.pgo_node)
+            self.pgo_dir = PgoSaveDirectory(self, self.pgo_node)
             self.create_timer(2.0, self.resolve_save_directory)
 
         self.tf_buffer = Buffer()
@@ -139,25 +120,12 @@ class ExitLandmarkMapper(Node):
         """SC-PGO's save_directory, asked until it answers (then this timer does nothing)."""
         if self.writer is not None:
             return
-        if self.pgo_future is None:
-            if not self.pgo_params.services_are_ready():
-                self.get_logger().warn(f"no /{self.pgo_node} yet: sightings kept in memory ({len(self.pending)})",
-                                       throttle_duration_sec=30.0)
-                return
-            self.pgo_future = self.pgo_params.get_parameters(["save_directory"])
-            return
-        if not self.pgo_future.done():
-            return
-        result, self.pgo_future = self.pgo_future.result(), None
-        if result is None or not result.values or result.values[0].type != ParameterType.PARAMETER_STRING:
-            self.get_logger().error(f"/{self.pgo_node} has no save_directory: set this node's save_directory",
-                                    throttle_duration_sec=30.0)
-            return
-        directory = result.values[0].string_value
-        if not os.path.isabs(directory):
-            pids = node_pids(self.pgo_node)
-            directory = os.path.join(os.readlink(f"/proc/{pids[0]}/cwd") if pids else os.getcwd(), directory)
-        self.open_writer(os.path.normpath(directory))
+        directory = self.pgo_dir.poll()
+        if directory is not None:
+            self.open_writer(directory)
+        elif not self.pgo_dir.service_ready:
+            self.get_logger().warn(f"no /{self.pgo_node} yet: sightings kept in memory ({len(self.pending)})",
+                                   throttle_duration_sec=30.0)
 
     def on_info(self, msg: CameraInfo):
         self.K = np.array(msg.k, dtype=float).reshape(3, 3)

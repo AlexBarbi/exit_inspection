@@ -39,5 +39,7 @@ exit_landmark_mapper:
     assoc_angle_deg: 45.0
     confirm_sightings: 5
     confirm_baseline: 0.5
+    confirm_sightings_short: 8    # or this many sightings from at least confirm_baseline_short (a sign glimpsed while turning)
+    confirm_baseline_short: 0.25
     door_width: 1.2
     door_height: 2.0

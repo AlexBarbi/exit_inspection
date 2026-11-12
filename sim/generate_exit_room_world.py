@@ -146,8 +146,12 @@ def write_sign_model(models_dir, case):
     name = f"exit_sign_{case.name}"
     tex_dir = os.path.join(models_dir, name, "materials", "textures")
     os.makedirs(tex_dir, exist_ok=True)
-    img.save(os.path.join(tex_dir, "sign.png"))
-    tex = f"model://{name}/materials/textures/sign.png"
+    # One file name per sign: Gazebo (ogre2) caches textures by file name, so with the same name in every model all
+    # signs showed the texture loaded first.
+    for old in os.listdir(tex_dir):
+        os.remove(os.path.join(tex_dir, old))
+    img.save(os.path.join(tex_dir, f"{name}.png"))
+    tex = f"model://{name}/materials/textures/{name}.png"
     with open(os.path.join(models_dir, name, "model.config"), "w") as f:
         f.write(f"""<?xml version="1.0"?>
 <model>
@@ -204,8 +208,9 @@ def sign_include(case, w, h):
 
 def obstacles():
     out = []
-    # warning: a 0.6 m box beside the north-east door (door spans x 3.4..4.6), corridor in front of the door free
-    x, y = 5.3, ROOM_Y / 2 - 0.8
+    # warning: a 0.6 m box beside the north-east door (door spans x 3.4..4.6, the zone with its 0.5 m margins
+    # 2.9..5.1): box x 4.8..5.4, 0.3 m of it inside the zone, corridor in front of the door free
+    x, y = 5.1, ROOM_Y / 2 - 0.8
     out.append(box_model("carton_warning", x, y, 0.4, 0.0, 0.6, 0.6, 0.8, (0.7, 0.55, 0.35)))
     # blocked: pallet with a stack of cartons right in front of the south-west door (door spans x -4.6..-3.4)
     x, y = -4.0, -ROOM_Y / 2 + 0.7

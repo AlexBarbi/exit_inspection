@@ -11,6 +11,10 @@ install(PROGRAMS
   scripts/exit_landmark_mapper.py
   scripts/finalize_exits.py
   scripts/check_exits_gt.py
+  scripts/exit_zone_checker.py
+  scripts/check_zones_gt.py
+  scripts/exit_inspection_pass.py
+  scripts/exit_sign_sweep.py
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch config worlds models DESTINATION share/${PROJECT_NAME})

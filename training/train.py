@@ -31,7 +31,7 @@ def main():
     ap.add_argument("--weights", default=BASE)
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--imgsz", type=int, default=1280)
-    ap.add_argument("--batch", type=int, default=12)
+    ap.add_argument("--batch", type=int, default=6)  # 12 at 1280 fills the 8 GB laptop GPU and crawls
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--project", default=os.path.expanduser("~/RaNAV/datasets/exit_sign/runs"))
     ap.add_argument("--name", default="exit_sign")
@@ -46,7 +46,7 @@ def main():
         model.train(data=os.path.expanduser(args.data), epochs=args.epochs, imgsz=args.imgsz, batch=args.batch,
                     workers=args.workers, project=args.project, name=args.name, exist_ok=False, patience=20,
                     fliplr=0.5, flipud=0.0, hsv_h=0.01, hsv_s=0.5, hsv_v=0.4, degrees=0.0, mosaic=1.0,
-                    close_mosaic=10, scale=0.5, cache=False, plots=True)
+                    close_mosaic=min(10, args.epochs // 3), scale=0.5, cache=False, plots=True)
         best = os.path.join(str(model.trainer.save_dir), "weights", "best.pt")
     onnx = YOLO(best).export(format="onnx", imgsz=(736, 1280), dynamic=False, simplify=True)
     os.makedirs(os.path.dirname(args.export), exist_ok=True)

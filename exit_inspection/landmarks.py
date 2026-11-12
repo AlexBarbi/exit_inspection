@@ -2,7 +2,8 @@
 
 A sighting is one detector box cast into the lidar cloud: the ray through the box center hits the wall, a vertical
 plane fitted around the hit gives the sign center (ray x plane) and the wall normal. A landmark is the sightings of
-one sign merged: median center, mean normal, majority class. Plain numpy, no ROS.
+one sign merged, whatever their class: median center, mean normal, majority class, and from it the group (door or
+route). Plain numpy, no ROS.
 """
 
 from collections import Counter
@@ -47,6 +48,10 @@ class MapperParams:
     assoc_angle_deg: float = 45.0
     confirm_sightings: int = 5
     confirm_baseline: float = 0.5
+    # or: more sightings from a shorter baseline (a sign glimpsed while turning; its position comes from the wall
+    # plane, not from triangulation, so the baseline only guards against a detector error repeated from one spot)
+    confirm_sightings_short: int = 8
+    confirm_baseline_short: float = 0.25
     # door below a door sign (v1: fixed size)
     door_width: float = 1.2
     door_height: float = 2.0
@@ -131,9 +136,14 @@ def make_sighting(box: Box, K: np.ndarray, T_map_cam: np.ndarray, cloud: np.ndar
 @dataclass
 class Landmark:
     id: int
-    group: str  # "door" or "route"
     params: MapperParams
+    door_classes: Tuple[str, ...]
     sightings: List[Sighting] = field(default_factory=list)
+
+    @property
+    def group(self) -> str:
+        """door or route, from the majority class: a few boxes of the wrong class do not change it."""
+        return group_of(self.cls, self.door_classes)
 
     @property
     def center(self) -> np.ndarray:
@@ -175,11 +185,14 @@ class Landmark:
 
     @property
     def confirmed(self) -> bool:
-        return len(self.sightings) >= self.params.confirm_sightings and self.baseline >= self.params.confirm_baseline
+        p, n, b = self.params, len(self.sightings), self.baseline
+        return ((n >= p.confirm_sightings and b >= p.confirm_baseline)
+                or (n >= p.confirm_sightings_short and b >= p.confirm_baseline_short))
 
 
 class LandmarkSet:
-    """Sightings merged into landmarks: same group, within assoc_distance of the center and assoc_angle_deg."""
+    """Sightings merged into landmarks: within assoc_distance of the center and assoc_angle_deg of the normal, whatever
+    the class (one physical sign, one landmark; the class is a vote)."""
 
     def __init__(self, params: MapperParams, door_classes: Sequence[str]):
         self.params = params
@@ -188,16 +201,15 @@ class LandmarkSet:
         self._cos_angle = np.cos(np.radians(params.assoc_angle_deg))
 
     def add(self, s: Sighting) -> int:
-        group = group_of(s.cls, self.door_classes)
         best, best_dist = None, self.params.assoc_distance
         for l in self._landmarks:
-            if l.group != group or l.normal @ s.normal < self._cos_angle:
+            if l.normal @ s.normal < self._cos_angle:
                 continue
             dist = float(np.linalg.norm(l.center - s.hit))
             if dist < best_dist:
                 best, best_dist = l, dist
         if best is None:
-            best = Landmark(id=len(self._landmarks), group=group, params=self.params)
+            best = Landmark(id=len(self._landmarks), params=self.params, door_classes=self.door_classes)
             self._landmarks.append(best)
         best.sightings.append(s)
         return best.id

@@ -1,0 +1,51 @@
+# exit_zone_checker.py parameters (exit_inspection.zone.ZoneParams + node settings).
+# Spec: docs/superpowers/specs/2026-11-11-exit-zone-checker-design.md in the RaNAV workspace.
+exit_zone_checker:
+  ros__parameters:
+    pgo_node: alaserPGO           # empty exits_file: <its save_directory>/exit_inspection/exits.yaml
+    map_frame: camera_init
+    lio_base_frame: lio_base      # FAST-LIO's base (camera_init -> rslidar_lio -> lio_base)
+    base_frame: base              # URDF base, parent of the camera frames
+    lidar_frame: rslidar_lio      # origin of the scans (people shadows)
+    depth_topic: /camera/depth/image_rect_raw     # raw D435i depth, 86 x 58 deg (wider than the color image)
+    depth_info_topic: /camera/depth/camera_info
+    depth_reliable: true          # multi-MB images get lost on best-effort subscriptions
+    cloud_topic: /registered_scan_static
+    persons_topic: /person_detector/detections
+    person_classes: [person]
+    person_min_conf: 0.4
+    person_offset: 0.15           # detection center (front surface) -> person center
+    use_depth: true
+    use_lidar: true
+    depth_every_n: 3              # one depth image out of n (15 Hz camera)
+    depth_stride: 4               # every n-th pixel and row
+    depth_min: 0.2
+    depth_max: 6.0
+    window: 3.0                   # s of frames per verdict
+    max_range: 7.5                # an exit takes frames while its door is this close to the sensor
+    min_frame_points: 10
+    rate: 2.0                     # Hz
+    debug_dump: false             # inputs of the latest evaluation to <exits folder>/zone_debug/ (test/replay_zone.py)
+    tf_timeout: 0.2
+    # zone and verdict
+    cell: 0.05
+    margin: 0.5                   # zone width = door width + 2 margin
+    depth: 3.0                    # zone depth from the wall
+    wall_gap: 0.1
+    object_min_height: 0.05
+    object_max_height: 2.0
+    floor_tolerance: 0.03
+    floor_search: 0.3
+    floor_bin: 0.02
+    floor_min_points: 50
+    wall_band: 0.3
+    wall_min_points: 30
+    min_points: 3
+    min_frames: 2
+    min_object_area: 0.01
+    object_depth: 0.5             # unseen cells this far behind an object count as object
+    w_min: 0.9                    # free corridor width from the door
+    clear_coverage: 0.9
+    min_camera_frames: 3          # depth frames in the window for any verdict but UNVERIFIED (people come from the camera)
+    person_radius: 0.4
+    person_extent: 0.9            # object parts touching a person disk and within this of its center: the person

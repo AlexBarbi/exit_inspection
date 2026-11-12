@@ -112,15 +112,27 @@ def test_group_of():
     assert lm.group_of("exit_arrow_side", DOOR_CLASSES) == "route"
 
 
-def test_association_merges_close_and_splits_far_turned_or_other_group():
+def test_association_merges_close_and_splits_far_or_turned():
     ls = lm.LandmarkSet(PARAMS, DOOR_CLASSES)
     a = ls.add(mk([5.0, 0.0, 2.2]))
     assert ls.add(mk([5.0, 0.6, 2.2])) == a  # 0.6 m away: same sign
     assert ls.add(mk([5.0, 2.5, 2.2])) != a  # 2.5 m away
     turned = (-math.cos(math.radians(60)), math.sin(math.radians(60)), 0.0)
     assert ls.add(mk([5.0, 0.1, 2.2], normal=turned)) != a  # 60 deg off
-    assert ls.add(mk([5.0, 0.0, 2.2], cls="exit_arrow_side")) != a  # route sign, other group
-    assert len(ls.landmarks()) == 4
+    assert len(ls.landmarks()) == 3
+
+
+def test_a_misclassified_sighting_joins_the_sign_and_the_majority_decides_the_group():
+    """One physical sign is one landmark: a few boxes of the wrong class must not make a route sign next to a door."""
+    ls = lm.LandmarkSet(PARAMS, DOOR_CLASSES)
+    a = ls.add(mk([5.0, 0.0, 2.2], cls="exit_arrow_down"))
+    assert ls.add(mk([5.0, 0.05, 2.2], cls="exit_arrow_side")) == a
+    assert ls.add(mk([5.0, -0.05, 2.2], cls="exit_arrow_down")) == a
+    (l,) = ls.landmarks()
+    assert l.cls == "exit_arrow_down" and l.group == "door"
+    for _ in range(3):
+        ls.add(mk([5.0, 0.0, 2.2], cls="exit_arrow_side"))
+    assert ls.landmarks()[0].group == "route"  # 4 side against 2 down
 
 
 def test_landmark_center_normal_width_majority():
@@ -147,6 +159,20 @@ def test_confirmation_needs_count_and_baseline():
     assert not ls.landmarks()[0].confirmed  # 4 sightings
     ls.add(mk([5.0, 0.0, 2.2], robot=(1.2, 0.0, 0.35)))
     assert ls.landmarks()[0].confirmed
+
+
+def test_many_sightings_from_a_short_baseline_confirm_too():
+    """A sign glimpsed while the robot turns: 9 sightings within 0.3 m (the exit room's warning door, first full run)."""
+    ls = lm.LandmarkSet(PARAMS, DOOR_CLASSES)
+    for i in range(7):
+        ls.add(mk([5.0, 0.0, 2.2], robot=(0.05 * i, 0.0, 0.35)))
+    assert not ls.landmarks()[0].confirmed  # 7 sightings, 0.30 m
+    ls.add(mk([5.0, 0.0, 2.2], robot=(0.3, 0.0, 0.35)))
+    assert ls.landmarks()[0].confirmed      # 8 sightings, 0.30 m
+    ls = lm.LandmarkSet(PARAMS, DOOR_CLASSES)
+    for i in range(12):
+        ls.add(mk([5.0, 0.0, 2.2], robot=(0.01 * i, 0.0, 0.35)))
+    assert not ls.landmarks()[0].confirmed  # many, but from one spot
 
 
 if __name__ == "__main__":

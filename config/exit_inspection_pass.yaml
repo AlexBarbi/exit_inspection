@@ -1,0 +1,32 @@
+# exit_inspection_pass.py parameters (mission) + exit_inspection.viewpoints.ViewpointParams.
+# Spec: docs/superpowers/specs/2026-11-11-exit-inspection-pass-design.md in the RaNAV workspace.
+exit_inspection_pass:
+  ros__parameters:
+    pgo_node: alaserPGO           # empty exits_file: <its save_directory>/exit_inspection/exits.yaml
+    map_frame: camera_init
+    far_frame: map                # far_planner's frame (static identity camera_init -> map)
+    lio_base_frame: lio_base
+    reach_tolerance: 0.35         # m from the viewpoint
+    yaw_tolerance: 0.25           # rad from facing the door
+    turn_timeout: 20.0            # s at the viewpoint for the turn; then observed as it stands
+    window: 3.0                   # exit_zone_checker window [s]
+    window_margin: 0.5            # verdicts count from window + this after the robot got there
+    observe_time: 3.0             # s of verdicts per stop (majority)
+    min_evaluations: 3            # evaluations with camera data per stop (else wait, up to verdict_timeout)
+    verdict_timeout: 20.0         # s without a verdict: UNVERIFIED
+    max_attempts: 2               # viewpoints per exit (UNVERIFIED or unreached: the next one)
+    goal_timeout: 180.0
+    idle_timeout: 10.0            # far_planner without /way_point that long: no route
+    ack_timeout: 5.0              # goal published again when far_planner does not answer
+    return_home: true
+    zone_margin: 0.5              # for the report drawing (exit_zone_checker margin)
+    # viewpoints
+    standoffs: [4.5, 4.0, 5.0, 3.5, 5.5, 3.0]
+    lateral: [0.0, 0.6, -0.6, 1.2, -1.2]
+    robot_radius: 0.45
+    sight_clearance: 0.2
+    band_low: 0.15
+    band_high: 1.0
+    resolution: 0.1
+    min_points: 2
+    zone_depth: 3.0
